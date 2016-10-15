@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+
+<mapper namespace="cn.tedu.note.dao.NoteDAO">
+	<select id="findNotesByNotebookId"
+			parameterType="string"
+			resultType="java.util.Map">
+			select 
+				 cn_note_id id,
+				 cn_note_title title
+			from cn_note
+			where 
+				cn_notebook_id=#{notebookId}
+			and cn_note_type_id = '1'
+			order by cn_note_last_modify_time desc
+	</select>
+	<select id="findNoteBodyByNoteId" parameterType="string"
+			resultType="java.util.Map">
+			select
+				cn_note_id id,
+				cn_note_title title, 
+				cn_note_body body
+			from cn_note
+			where cn_note_id=#{noteId}		
+	</select>
+	<select id="findNoteByNoteId"
+			parameterType="string"
+			resultType="cn.tedu.note.entity.Note">
+		
+			select 
+				cn_note_id id,
+				cn_notebook_id notebookId,
+				cn_user_id userId,
+				cn_note_status_id statusId,
+				cn_note_type_id typeId,
+				cn_note_title title,
+				cn_note_body body,
+				cn_note_create_time creatime,
+				cn_note_last_modify_time lastModifyTime
+			from cn_note
+			where cn_note_id=#{noteId}
+	</select>
+	<insert id="addNote" 
+			parameterType="cn.tedu.note.entity.Note">
+		insert into
+			cn_note
+				(cn_note_id ,
+				cn_notebook_id ,
+				cn_user_id ,
+				cn_note_status_id ,
+				cn_note_type_id ,
+				cn_note_title ,
+				cn_note_body ,
+				cn_note_create_time ,
+				cn_note_last_modify_time)
+			values(#{id},#{notebookId},#{userId},#{statusId},
+				   #{typeId},#{title},#{body},#{creatime},
+				   #{lastModifyTime})		
+	</insert>
+	<update id="updateNote" 
+			parameterType="cn.tedu.note.entity.Note">
+			update 
+				cn_note 
+			set 
+				cn_notebook_id =#{notebookId},
+				cn_user_id =#{userId},
+				cn_note_status_id =#{statusId},
+				cn_note_type_id =#{typeId},
+				cn_note_title =#{title},
+				cn_note_body =#{body},
+				cn_note_create_time =#{creatime},
+				cn_note_last_modify_time=#{lastModifyTime}
+			where 
+				cn_note_id =#{id}
+	</update>
+	<delete id="removeNote"
+			parameterType="cn.tedu.note.entity.Note">
+		delete from 
+			cn_note
+		where 
+			cn_note_id=#{id};		
+	</delete>
+	<update id="updateNoteDelType">
+		update 
+			cn_note
+		set 
+		    cn_note_type_id='2'
+		where 
+			cn_note_id in
+		<foreach collection="array" item="id"
+				 open="(" separator="," close=")">
+			#{id}
+		
+		</foreach>	  			
+	</update>
+	
+	<select id="countNormalNote" resultType="java.lang.Integer">
+		select 
+			 count(*)
+		from
+		 	 cn_note
+		where 
+		     cn_note_type_id='1' and
+		     cn_note_id in
+		 <foreach collection="list" item="id"
+				 open="(" separator="," close=")">
+		 	#{id}		  
+		 </foreach>     	 	
+	</select>
+	<!-- map作为参数 -->
+	<update id="updateNotes" parameterType="map">
+		update
+			cn_note
+		<set>
+			<if test="typeId!=null">
+				cn_note_type_id=#{typeId},
+			</if>
+			<if test="title!=null">
+				cn_note_title=#{title},
+			</if>
+			<if test="lastModifyTime!=null">
+				cn_note_last_modify_time=#{lastModifyTime},
+			</if>
+		</set>		
+		where  cn_note_id in
+		<foreach collection="ids" item="id"
+				open="(" separator="," close=")">
+				#{id}
+		</foreach>	
+		
+	</update>
+	<select id="countNotes" parameterType="map" 
+			resultType="java.lang.Integer">
+		select 
+			count(*) as count
+		from 
+			cn_note
+		<where>
+			<if test="typeId!=null">
+				cn_note_type_id=#{typeId} and
+			</if>
+			<choose>
+				<when test="lastModifyTime!=null">
+					cn_note_last_mpdify_time=#{lastModifyTime}
+				</when>
+				<when test="modifyBegin!=null and modifyEnd!=null">
+					cn_note_last_mpdify_time 
+						between #{modifyBegin}
+						and #{modifyEnd}
+				</when>
+				<when test="modifyBegin!=null">
+					cn_note_last_mpdify_time &gt;#{modifyBegin} 
+				</when>
+				<when test="modifyEnd!=null">
+					cn_note_last_mpdify_time &lt;#{modifyEnd} 
+				</when>
+			</choose>
+			<if test="ids!=null">
+				cn_note_id in
+				<foreach collection="ids" item="id"
+						open="(" separator="," close=")">
+						#{id}
+				</foreach>
+			</if>
+		</where>		
+	</select>
+	<delete id="deleteNotes">
+		delete from
+			cn_note
+		where
+			cn_note_id in
+		<foreach collection="array" 
+				 item="id"
+				 open="(" separator="," close=")">
+			#{id}
+		</foreach>		
+	</delete>
+	
+	<insert id="addNotes">
+		
+		insert into
+			cn_note
+				(cn_note_id ,
+				cn_notebook_id ,
+				cn_user_id ,
+				cn_note_status_id ,
+				cn_note_type_id ,
+				cn_note_title ,
+				cn_note_body ,
+				cn_note_create_time ,
+				cn_note_last_modify_time)
+			values
+			<foreach collection="list" item="note" 
+					     separator=",">
+				   (#{note.id},#{note.notebookId},
+				   #{note.userId},#{note.statusId},
+				   #{note.typeId},#{note.title},
+				   #{note.body},#{note.creatime},
+				   #{note.lastModifyTime})
+			</foreach>	   
+				   		
+	</insert>
+	<select id="findAllByKeys" parameterType="map"
+			resultType="map">
+		select 
+			cn_note_id as id,
+			cn_note_title as title,
+			cn_note_body as body
+		from
+		   cn_note
+  		<where>
+			<if test="typeId!=null">
+				cn_note_type_id=#{typeId} 
+			</if>
+ 			
+			<trim suffixOverrides="and">
+				and
+			<if test="title!=null">
+				(cn_note_title like #{title} or
+			</if>
+			<if test="body!=null">
+				cn_note_body like #{body})
+			</if>
+			</trim>
+ 			
+		</where>
+		
+		    <if test="start!=null">
+		    	limit #{start},#{size}
+		    </if>  			
+	</select>
+</mapper>
